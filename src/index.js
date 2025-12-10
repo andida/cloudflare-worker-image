@@ -4,7 +4,7 @@ import * as photon from '@silvia-odwyer/photon';
 import PHOTON_WASM from '../node_modules/@silvia-odwyer/photon/photon_rs_bg.wasm';
 
 import encodeWebp, { init as initWebpWasm } from '@jsquash/webp/encode';
-import WEBP_ENC_WASM from '../node_modules/@jsquash/webp/codec/enc/webp_enc.wasm';
+import WEBP_ENC_WASM from '../node_modules/@jsquash/webp/codec/enc/webp_enc.wasm';	
 
 // 图片处理
 const photonInstance = await WebAssembly.instantiate(PHOTON_WASM, {
@@ -69,7 +69,7 @@ export default {
 			return new Response(null, {
 				status: 302,
 				headers: {
-					location: 'https://github.com/ccbikai/cloudflare-worker-image',
+					location: 'https://meaningslab.com',
 				},
 			});
 		}
