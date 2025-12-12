@@ -67,6 +67,29 @@ quality:
 
 ![demo](https://image.miantiao.me/?url=https%3A%2F%2Fstatic.miantiao.me%2Fshare%2FMTyerw%2Fbanner-2048.jpeg&action=resize!830,400,2%7Crotate!180%7Cdraw_text!miantiao.me,10,10)
 
+### SVG 文字水印（支持右下角/左下角、字号、颜色、描边）
+
+`draw_svg_text` 会先把文字渲染成透明 PNG（SVG -> PNG），再叠加到原图上。
+
+参数格式：
+
+- 角落锚点（推荐）：`draw_svg_text!text,br|bl,marginX,marginY,fontSize,fill,opacity,stroke,strokeWidth`
+- 绝对坐标：`draw_svg_text!text,x,y,fontSize,fill,opacity,stroke,strokeWidth`
+
+注意：
+
+- 颜色是 hex 时，`#` 需要写成 `%23`（例如白色 `%23FFFFFF`）。
+- 文本如果包含逗号 `,`，需要 encode（写成 `%2C`）。
+- 多行文本可用换行（URL 里写 `%0A`）。
+
+示例（右下角）：
+
+`action=draw_svg_text!ImgEdify.ai,br,24,24,48,%23FFFFFF,0.85,%23000000,3`
+
+示例（左下角）：
+
+`action=draw_svg_text!ImgEdify.ai,bl,24,24,48,%23FFFFFF,0.85,%23000000,3`
+
 由于 Github 会缓存图片，请前往我博客查看真实示例。
 
 <http://chi.miantiao.me/post/cloudflare-worker-image/>

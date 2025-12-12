@@ -13,6 +13,7 @@
     "wrangler": "^3.0.0"
   },
   "dependencies": {
+    "@cf-wasm/resvg": "0.1.24",
     "@jsquash/webp": "^1.4.0",
     "@silvia-odwyer/photon": "^0.3.2",
     "query-string": "^8.1.0"
