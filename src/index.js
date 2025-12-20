@@ -172,11 +172,11 @@ const drawSvgText = (inputImage, rawParams) => {
 		paddingX = Math.ceil(fontSize * 0.4);
 		paddingY = Math.ceil(fontSize * 0.35);
 		const estimated = estimateTextOverlaySize({
-			lines,
-			fontSize,
-			paddingX,
-			paddingY,
-		});
+		lines,
+		fontSize,
+		paddingX,
+		paddingY,
+	});
 		overlayWidth = estimated.width;
 		overlayHeight = estimated.height;
 		lineHeight = estimated.lineHeight;
