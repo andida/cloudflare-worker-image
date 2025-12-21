@@ -306,7 +306,12 @@ export default {
 		}
 
 		// 目标图片获取与检查
-		const imageRes = await fetch(url, { headers: request.headers });
+		// 避免转发 If-Modified-Since / If-None-Match，否则源站返回 304 会导致 Worker 无法获取图片数据进行处理
+		const fetchHeaders = new Headers(request.headers);
+		fetchHeaders.delete('if-modified-since');
+		fetchHeaders.delete('if-none-match');
+		
+		const imageRes = await fetch(url, { headers: fetchHeaders });
 		if (!imageRes.ok) {
 			return imageRes;
 		}
