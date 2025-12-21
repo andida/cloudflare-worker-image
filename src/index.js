@@ -69,30 +69,17 @@ const buildSvgText = ({
 	const y0 = paddingY + fontSize; // baseline-ish
 
 	const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <!-- 测试 1: 使用系统默认字体 serif (红色) -->
-  <text
-    x="10"
-    y="30"
-    font-family="serif"
-    font-size="20"
-    fill="red"
-  >Serif Test Text</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800">
+  <!-- 蓝色矩形：如果能看到它，说明引擎没死 -->
+  <rect x="0" y="0" width="100" height="100" fill="blue" />
   
-  <!-- 测试 2: 使用我们上传的字体 (用户指定的颜色) -->
-  <text
-    x="${x}"
-    y="${y0}"
-    font-family="Courier New"
-    font-size="${fontSize}"
-    fill="${escapeXml(safeFill)}"
-    fill-opacity="${safeOpacity}"
-    stroke="${escapeXml(safeStroke)}"
-    stroke-width="${safeStrokeWidth}"
-    text-anchor="${textAnchor}"
-  ><tspan x="${x}" dy="0.8em">${escapeXml(text)}</tspan></text>
+  <!-- 测试文字 1: 系统字体 -->
+  <text x="100" y="100" font-family="serif" font-size="40" fill="red">SYSTEM TEXT</text>
+  
+  <!-- 测试文字 2: 上传字体 -->
+  <text x="100" y="200" font-family="Courier New" font-size="40" fill="white">UPLOADED TEXT</text>
 </svg>`;
-	console.log('Generated SVG:', svg);
+	console.log('Final SVG for Debug:', svg);
 	return svg;
 };
 
