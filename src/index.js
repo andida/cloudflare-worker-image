@@ -77,10 +77,11 @@ const buildSvgText = ({
 
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+  <rect width="100%" height="100%" fill="red" fill-opacity="0.2" />
   <text
     x="${x}"
     y="${y0}"
-    font-family="Roboto Mono, monospace"
+    font-family="Roboto Mono"
     font-size="${fontSize}"
     fill="${escapeXml(safeFill)}"
     fill-opacity="${safeOpacity}"
