@@ -68,34 +68,29 @@ const buildSvgText = ({
 	const x = textAnchor === 'end' ? width - paddingX : paddingX;
 	const y0 = paddingY + fontSize; // baseline-ish
 
-	const tspans = lines
-		.map((line, idx) => {
-			// 将第一个 dy 从 0 改为 0.8em，防止渲染器定位到画布外
-			return `<tspan x="${x}" dy="${idx === 0 ? '0.8em' : lineHeight}">${escapeXml(line)}</tspan>`;
-		})
-		.join('');
-
 	const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <style>
-    @font-face {
-      font-family: "WatermarkFont";
-      src: local("Courier New"), local("Monaco"), local("Arial");
-    }
-  </style>
-  <!-- 调试：如果能看到大绿圆，说明引擎正常，只是文字问题 -->
-  <circle cx="${width / 2}" cy="${height / 2}" r="30" fill="green" />
+  <!-- 测试 1: 使用系统默认字体 serif (红色) -->
+  <text
+    x="10"
+    y="30"
+    font-family="serif"
+    font-size="20"
+    fill="red"
+  >Serif Test Text</text>
+  
+  <!-- 测试 2: 使用我们上传的字体 (用户指定的颜色) -->
   <text
     x="${x}"
     y="${y0}"
-    font-family="WatermarkFont"
+    font-family="Courier New"
     font-size="${fontSize}"
     fill="${escapeXml(safeFill)}"
     fill-opacity="${safeOpacity}"
     stroke="${escapeXml(safeStroke)}"
     stroke-width="${safeStrokeWidth}"
     text-anchor="${textAnchor}"
-  >${tspans}</text>
+  ><tspan x="${x}" dy="0.8em">${escapeXml(text)}</tspan></text>
 </svg>`;
 	console.log('Generated SVG:', svg);
 	return svg;
@@ -236,7 +231,8 @@ const drawSvgText = (inputImage, rawParams) => {
 		font: {
 			fontDb: [new Uint8Array(FONT_DATA)],
 			loadSystemFonts: false,
-			defaultFontFamily: 'WatermarkFont',
+			// 如果没匹配到，默认使用第一种字体
+			defaultFontFamily: 'Courier New',
 		},
 	});
 	const pngBuffer = resvg.render().asPng();
