@@ -77,11 +77,10 @@ const buildSvgText = ({
 
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <rect width="100%" height="100%" fill="red" fill-opacity="0.2" />
   <text
     x="${x}"
     y="${y0}"
-    font-family="Roboto Mono"
+    font-family="Monaco"
     font-size="${fontSize}"
     fill="${escapeXml(safeFill)}"
     fill-opacity="${safeOpacity}"
@@ -228,7 +227,7 @@ const drawSvgText = (inputImage, rawParams) => {
 			fontDb: [new Uint8Array(FONT_DATA)],
 			loadSystemFonts: false,
 			// 指定默认字体，防止匹配失败
-			defaultFontFamily: 'Roboto Mono',
+			defaultFontFamily: 'Monaco',
 		},
 	});
 	const pngBuffer = resvg.render().asPng();
