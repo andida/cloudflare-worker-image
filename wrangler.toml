@@ -3,10 +3,6 @@ main = "src/index.js"
 compatibility_date = "2023-11-24"
 
 [[rules]]
-type = "Data"
-globs = ["**/*.ttf"]
-
-[[rules]]
 type = "CompiledWasm"
 globs = ["**/*.wasm"]
 

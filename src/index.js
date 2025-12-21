@@ -1,8 +1,4 @@
 import queryString from 'query-string';
-
-// 移除不再需要的 resvg 和字体
-// import { Resvg, initWasm as initResvgWasm } from '@cf-wasm/resvg';
-// import FONT_DATA from './font.ttf';
 import * as photon from '@silvia-odwyer/photon';
 import encodeWebp, { init as initWebpWasm } from '@jsquash/webp/encode';
 
@@ -19,65 +15,10 @@ await initWebpWasm(WEBP_ENC_WASM);
 
 const clampNumber = (value, min, max) => Math.min(max, Math.max(min, value));
 
-const parseNumber = (value, fallback) => {
-	const n = Number(value);
-	return Number.isFinite(n) ? n : fallback;
-};
-
-const escapeXml = (value) =>
-	String(value)
-		.replaceAll('&', '&amp;')
-		.replaceAll('<', '&lt;')
-		.replaceAll('>', '&gt;')
-		.replaceAll('"', '&quot;')
-		.replaceAll("'", '&apos;');
-
-const estimateTextOverlaySize = ({ lines, fontSize, paddingX, paddingY }) => {
-	// Simple heuristic (Roboto-ish): average glyph width ≈ 0.6 * fontSize
-	const maxLineLength = Math.max(0, ...lines.map((line) => line.length));
-	const textWidth = Math.ceil(maxLineLength * fontSize * 0.6);
-	const lineHeight = Math.ceil(fontSize * 1.25);
-	const textHeight = Math.max(1, lines.length) * lineHeight;
-	return {
-		width: Math.max(1, textWidth + paddingX * 2),
-		height: Math.max(1, textHeight + paddingY * 2),
-		lineHeight,
-	};
-};
-
-const buildSvgText = ({
-	text,
-	width,
-	height,
-	paddingX,
-	paddingY,
-	fontSize,
-	lineHeight,
-	fill,
-	opacity,
-	stroke,
-	strokeWidth,
-	textAnchor,
-}) => {
-	const safeFill = fill || '#FFFFFF';
-	const safeOpacity = clampNumber(opacity ?? 1, 0, 1);
-	const safeStroke = stroke || 'none';
-	const safeStrokeWidth = Math.max(0, strokeWidth || 0);
-
-	const lines = String(text ?? '').split('\n');
-	// x depends on anchor
-	const x = textAnchor === 'end' ? width - paddingX : paddingX;
-	const y0 = paddingY + fontSize; // baseline-ish
-
-	const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800">
-  
-</svg>`;
-	console.log('Final SVG for Debug:', svg);
-	return svg;
-};
-
-const drawSvgText = (inputImage, rawParams) => {
+/**
+ * 绘制文本水印 (使用 Photon 原生方法)
+ */
+const drawTextWatermark = (inputImage, rawParams) => {
 	const [
 		rawText = '',
 		rawPositionOrX = 'br',
@@ -152,8 +93,9 @@ const inWhiteList = (env, url) => {
 const processImage = async (env, request, inputImage, pipeAction) => {
 	const [action, options = ''] = pipeAction.split('!');
 	const params = options.split(',');
-	if (action === 'draw_svg_text') {
-		return drawSvgText(inputImage, params);
+	// 文本水印处理
+	if (action === 'draw_svg_text' || action === 'draw_text') {
+		return drawTextWatermark(inputImage, params);
 	}
 	if (multipleImageMode.includes(action)) {
 		const image2 = params.shift(); // 是否需要 decodeURIComponent ?
