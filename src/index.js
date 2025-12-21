@@ -1,10 +1,11 @@
 import queryString from 'query-string';
 
-import { Resvg } from '@cf-wasm/resvg';
-import encodeWebp, { init as initWebpWasm } from '@jsquash/webp/encode';
+// 移除不再需要的 resvg 和字体
+// import { Resvg, initWasm as initResvgWasm } from '@cf-wasm/resvg';
+// import FONT_DATA from './font.ttf';
 import * as photon from '@silvia-odwyer/photon';
+import encodeWebp, { init as initWebpWasm } from '@jsquash/webp/encode';
 
-import FONT_DATA from './font.ttf';
 import WEBP_ENC_WASM from '../node_modules/@jsquash/webp/codec/enc/webp_enc.wasm';
 import PHOTON_WASM from '../node_modules/@silvia-odwyer/photon/photon_rs_bg.wasm';
 
@@ -70,167 +71,48 @@ const buildSvgText = ({
 
 	const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="800">
-  <!-- 蓝色矩形：如果能看到它，说明引擎没死 -->
-  <rect x="0" y="0" width="100" height="100" fill="blue" />
   
-  <!-- 测试文字 1: 系统字体 -->
-  <text x="100" y="100" font-family="serif" font-size="40" fill="red">SYSTEM TEXT</text>
-  
-  <!-- 测试文字 2: 上传字体 -->
-  <text x="100" y="200" font-family="Courier New" font-size="40" fill="white">UPLOADED TEXT</text>
 </svg>`;
 	console.log('Final SVG for Debug:', svg);
 	return svg;
 };
 
 const drawSvgText = (inputImage, rawParams) => {
-	// Supported:
-	// - Corner: draw_svg_text!text,br|bl,marginX,marginY,fontSize,fill,opacity,stroke,strokeWidth
-	// - Absolute: draw_svg_text!text,x,y,fontSize,fill,opacity,stroke,strokeWidth
-	//
-	// Notes:
-	// - If using hex colors, encode `#` as `%23` in the URL.
 	const [
 		rawText = '',
-		rawPositionOrX = 'br',
-		rawMarginXOrY = '16',
-		rawMarginYOrFontSize = '16',
-		rawFontSizeOrFill = '32',
-		rawFillOrOpacity = '#FFFFFF',
-		rawOpacityOrStroke = '0.8',
-		rawStrokeOrStrokeWidth = 'none',
-		rawStrokeWidth = '0',
+		rawPosition = 'br',
+		rawMarginX = '24',
+		rawMarginY = '24',
 	] = rawParams;
 
-	const text = String(rawText ?? '');
+	const text = String(rawText);
 	if (!text) return inputImage;
+
 	const imageData = inputImage.get_image_data();
 	const baseWidth = imageData.width;
 	const baseHeight = imageData.height;
 
-	const isCorner = rawPositionOrX === 'br' || rawPositionOrX === 'bl';
+	const marginX = parseInt(rawMarginX) || 24;
+	const marginY = parseInt(rawMarginY) || 24;
 
-	let x = 0;
-	let y = 0;
-	let fontSize;
-	let fill;
-	let opacity;
-	let stroke;
-	let strokeWidth;
-	let marginX;
-	let marginY;
-	let textAnchor;
+	// Photon 的 draw_text 坐标是左上角
+	// 因 Photon WASM 限制，无法精确测量动态文字宽度，这里使用启发式估算 (每个字符约 20px)
+	let x = baseWidth - marginX - (text.length * 20);
+	let y = baseHeight - marginY - 40;
 
-	if (isCorner) {
-		marginX = Math.max(0, parseNumber(rawMarginXOrY, 16));
-		marginY = Math.max(0, parseNumber(rawMarginYOrFontSize, 16));
-		fontSize = clampNumber(parseNumber(rawFontSizeOrFill, 32), 8, 512);
-		fill = String(rawFillOrOpacity ?? '#FFFFFF');
-		opacity = clampNumber(parseNumber(rawOpacityOrStroke, 0.8), 0, 1);
-		stroke = String(rawStrokeOrStrokeWidth ?? 'none');
-		strokeWidth = Math.max(0, parseNumber(rawStrokeWidth, 0));
-		textAnchor = rawPositionOrX === 'br' ? 'end' : 'start';
-	} else {
-		// absolute x,y
-		x = Math.floor(parseNumber(rawPositionOrX, 0));
-		y = Math.floor(parseNumber(rawMarginXOrY, 0));
-		fontSize = clampNumber(parseNumber(rawMarginYOrFontSize, 32), 8, 512);
-		fill = String(rawFontSizeOrFill ?? '#FFFFFF');
-		opacity = clampNumber(parseNumber(rawFillOrOpacity, 0.8), 0, 1);
-		stroke = String(rawOpacityOrStroke ?? 'none');
-		strokeWidth = Math.max(0, parseNumber(rawStrokeOrStrokeWidth, 0));
-		textAnchor = 'start';
+	if (rawPosition === 'bl') {
+		x = marginX;
 	}
 
-	const lines = text.split('\n');
+	// 限制坐标不超出边界
+	x = Math.max(0, Math.min(x, baseWidth - 10));
+	y = Math.max(0, Math.min(y, baseHeight - 10));
 
-	x = Math.max(0, x);
-	y = Math.max(0, y);
-
-	const maxOverlayWidth = Math.max(
-		1,
-		isCorner ? Math.floor(baseWidth - marginX) : Math.floor(baseWidth - x)
-	);
-	const maxOverlayHeight = Math.max(
-		1,
-		isCorner ? Math.floor(baseHeight - marginY) : Math.floor(baseHeight - y)
-	);
-
-	let paddingX;
-	let paddingY;
-	let overlayWidth;
-	let overlayHeight;
-	let lineHeight;
-	for (let i = 0; i < 32; i += 1) {
-		paddingX = Math.ceil(fontSize * 0.4);
-		paddingY = Math.ceil(fontSize * 0.35);
-		const estimated = estimateTextOverlaySize({
-			lines,
-			fontSize,
-			paddingX,
-			paddingY,
-		});
-		overlayWidth = estimated.width;
-		overlayHeight = estimated.height;
-		lineHeight = estimated.lineHeight;
-		if (overlayWidth <= maxOverlayWidth && overlayHeight <= maxOverlayHeight) break;
-		if (fontSize <= 8) break;
-		fontSize = Math.max(8, fontSize - 2);
-	}
-
-	if (isCorner) {
-		if (rawPositionOrX === 'br') {
-			x = baseWidth - overlayWidth - Math.floor(marginX);
-		} else {
-			x = Math.floor(marginX);
-		}
-		y = baseHeight - overlayHeight - Math.floor(marginY);
-	}
-
-	const maxX = Math.max(0, baseWidth - overlayWidth);
-	const maxY = Math.max(0, baseHeight - overlayHeight);
-	x = Math.floor(clampNumber(x, 0, maxX));
-	y = Math.floor(clampNumber(y, 0, maxY));
-
-	const svg = buildSvgText({
-		text,
-		width: overlayWidth,
-		height: overlayHeight,
-		paddingX,
-		paddingY,
-		fontSize,
-		lineHeight,
-		fill,
-		opacity,
-		stroke,
-		strokeWidth,
-		textAnchor,
-	});
-
-	console.log('SVG content length:', svg.length);
-	console.log('FONT_DATA exists:', !!FONT_DATA);
-	if (FONT_DATA) {
-		console.log('FONT_DATA byteLength:', FONT_DATA.byteLength || FONT_DATA.size);
-	}
-
-	const resvg = new Resvg(svg, {
-		fitTo: { mode: 'original' },
-		font: {
-			fontDb: [new Uint8Array(FONT_DATA)],
-			loadSystemFonts: false,
-			// 如果没匹配到，默认使用第一种字体
-			defaultFontFamily: 'Courier New',
-		},
-	});
-	const pngBuffer = resvg.render().asPng();
-	console.log('Rendered PNG size:', pngBuffer.byteLength);
-
-	const overlay = photon.PhotonImage.new_from_byteslice(new Uint8Array(pngBuffer));
 	try {
-		console.log(`Applying watermark at (${x}, ${y}) on base image ${baseWidth}x${baseHeight}`);
-		photon.watermark(inputImage, overlay, x, y);
-	} finally {
-		overlay.ptr && overlay.free();
+		// 使用 Photon 的原生绘制方法
+		photon.draw_text(inputImage, text, x, y);
+	} catch (e) {
+		console.error('Photon draw_text failed:', e);
 	}
 
 	return inputImage;
@@ -280,12 +162,7 @@ export default {
 		const cacheUrl = new URL(request.url);
 		const cacheKey = new Request(cacheUrl.toString());
 		const cache = caches.default;
-		let hasCache = await cache.match(cacheKey);
-
-		// 调试期间：如果是绘制文本，强制不使用缓存以观察效果
-		if (queryString.parse(cacheUrl.search).action?.includes('draw_svg_text')) {
-			hasCache = null;
-		}
+		const hasCache = await cache.match(cacheKey);
 
 		if (hasCache) {
 			console.log('cache: true');
