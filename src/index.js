@@ -77,10 +77,17 @@ const buildSvgText = ({
 
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+  <style>
+    @font-face {
+      font-family: "CustomFont";
+      src: local("Monaco");
+    }
+  </style>
+  <rect x="0" y="0" width="${width}" height="${height}" fill="none" stroke="green" stroke-width="10" />
   <text
     x="${x}"
     y="${y0}"
-    font-family="Monaco"
+    font-family="CustomFont, Monaco, sans-serif"
     font-size="${fontSize}"
     fill="${escapeXml(safeFill)}"
     fill-opacity="${safeOpacity}"
@@ -226,8 +233,7 @@ const drawSvgText = (inputImage, rawParams) => {
 		font: {
 			fontDb: [new Uint8Array(FONT_DATA)],
 			loadSystemFonts: false,
-			// 指定默认字体，防止匹配失败
-			defaultFontFamily: 'Monaco',
+			defaultFontFamily: 'CustomFont',
 		},
 	});
 	const pngBuffer = resvg.render().asPng();
@@ -284,11 +290,17 @@ const processImage = async (env, request, inputImage, pipeAction) => {
 
 export default {
 	async fetch(request, env, context) {
-		// 读取缓存
+		// 匹配缓存
 		const cacheUrl = new URL(request.url);
 		const cacheKey = new Request(cacheUrl.toString());
 		const cache = caches.default;
-		const hasCache = await cache.match(cacheKey);
+		let hasCache = await cache.match(cacheKey);
+
+		// 调试期间：如果是绘制文本，强制不使用缓存以观察效果
+		if (queryString.parse(cacheUrl.search).action?.includes('draw_svg_text')) {
+			hasCache = null;
+		}
+
 		if (hasCache) {
 			console.log('cache: true');
 			return hasCache;
