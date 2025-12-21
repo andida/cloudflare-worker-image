@@ -101,27 +101,30 @@ const drawSvgText = (inputImage, rawParams) => {
 	if (isCorner) {
 		const marginX = parseInt(rawMarginXOrY) || 24;
 		const marginY = parseInt(rawMarginYOrFontSize) || 24;
-		// 估算：Photon 默认字体每个字符宽度约 25-30px
-		const estimatedTextWidth = text.length * 26;
+
+		// 更加激进的估算：每个字符约 32px，并增加 20px 的额外缓冲空间
+		const estimatedTextWidth = (text.length * 32) + 20;
 
 		if (rawPositionOrX === 'br') {
 			x = baseWidth - marginX - estimatedTextWidth;
 		} else {
 			x = marginX;
 		}
-		y = baseHeight - marginY - 50; // 50 是估算的行高
+		y = baseHeight - marginY - 60; // 增加高度估算
 	} else {
 		// 绝对坐标模式
 		x = parseInt(rawPositionOrX) || 0;
 		y = parseInt(rawMarginXOrY) || 0;
 	}
 
-	// 限制坐标不超出边界 (留一点 buffer)
-	x = Math.max(10, Math.min(x, baseWidth - (text.length * 15)));
-	y = Math.max(10, Math.min(y, baseHeight - 40));
+	// 最终安全检查：确保 x 坐标不会让文字尾部贴死边缘
+	const minSafetyX = 10;
+	const maxSafetyX = baseWidth - (text.length * 28); // 强制保底宽度
+	x = Math.max(minSafetyX, Math.min(x, maxSafetyX));
+	y = Math.max(10, Math.min(y, baseHeight - 50));
 
 	try {
-		console.log(`Drawing text "${text}" at (${Math.round(x)}, ${Math.round(y)})`);
+		console.log(`[Watermark] Image: ${baseWidth}x${baseHeight}, Text: "${text}", Final Pos: (${Math.round(x)}, ${Math.round(y)})`);
 		// 使用 Photon 的原生绘制方法
 		photon.draw_text(inputImage, text, Math.round(x), Math.round(y));
 	} catch (e) {
