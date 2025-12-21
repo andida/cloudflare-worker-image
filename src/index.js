@@ -80,9 +80,10 @@ const buildSvgText = ({
 const drawSvgText = (inputImage, rawParams) => {
 	const [
 		rawText = '',
-		rawPosition = 'br',
-		rawMarginX = '24',
-		rawMarginY = '24',
+		rawPositionOrX = 'br',
+		rawMarginXOrY = '24',
+		rawMarginYOrFontSize = '24',
+		rawFontSize = '48',
 	] = rawParams;
 
 	const text = String(rawText);
@@ -92,25 +93,37 @@ const drawSvgText = (inputImage, rawParams) => {
 	const baseWidth = imageData.width;
 	const baseHeight = imageData.height;
 
-	const marginX = parseInt(rawMarginX) || 24;
-	const marginY = parseInt(rawMarginY) || 24;
+	const isCorner = rawPositionOrX === 'br' || rawPositionOrX === 'bl';
 
-	// Photon 的 draw_text 坐标是左上角
-	// 因 Photon WASM 限制，无法精确测量动态文字宽度，这里使用启发式估算 (每个字符约 20px)
-	let x = baseWidth - marginX - (text.length * 20);
-	let y = baseHeight - marginY - 40;
+	let x = 0;
+	let y = 0;
 
-	if (rawPosition === 'bl') {
-		x = marginX;
+	if (isCorner) {
+		const marginX = parseInt(rawMarginXOrY) || 24;
+		const marginY = parseInt(rawMarginYOrFontSize) || 24;
+		// 估算：Photon 默认字体每个字符宽度约 25-30px
+		const estimatedTextWidth = text.length * 26;
+
+		if (rawPositionOrX === 'br') {
+			x = baseWidth - marginX - estimatedTextWidth;
+		} else {
+			x = marginX;
+		}
+		y = baseHeight - marginY - 50; // 50 是估算的行高
+	} else {
+		// 绝对坐标模式
+		x = parseInt(rawPositionOrX) || 0;
+		y = parseInt(rawMarginXOrY) || 0;
 	}
 
-	// 限制坐标不超出边界
-	x = Math.max(0, Math.min(x, baseWidth - 10));
-	y = Math.max(0, Math.min(y, baseHeight - 10));
+	// 限制坐标不超出边界 (留一点 buffer)
+	x = Math.max(10, Math.min(x, baseWidth - (text.length * 15)));
+	y = Math.max(10, Math.min(y, baseHeight - 40));
 
 	try {
+		console.log(`Drawing text "${text}" at (${Math.round(x)}, ${Math.round(y)})`);
 		// 使用 Photon 的原生绘制方法
-		photon.draw_text(inputImage, text, x, y);
+		photon.draw_text(inputImage, text, Math.round(x), Math.round(y));
 	} catch (e) {
 		console.error('Photon draw_text failed:', e);
 	}
