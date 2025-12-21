@@ -216,12 +216,18 @@ const drawSvgText = (inputImage, rawParams) => {
 	});
 
 	console.log('SVG content length:', svg.length);
+	console.log('FONT_DATA exists:', !!FONT_DATA);
+	if (FONT_DATA) {
+		console.log('FONT_DATA byteLength:', FONT_DATA.byteLength || FONT_DATA.size);
+	}
 
 	const resvg = new Resvg(svg, {
 		fitTo: { mode: 'original' },
 		font: {
 			fontDb: [new Uint8Array(FONT_DATA)],
 			loadSystemFonts: false,
+			// 指定默认字体，防止匹配失败
+			defaultFontFamily: 'Roboto Mono',
 		},
 	});
 	const pngBuffer = resvg.render().asPng();
