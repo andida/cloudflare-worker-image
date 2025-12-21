@@ -172,11 +172,11 @@ const drawSvgText = (inputImage, rawParams) => {
 		paddingX = Math.ceil(fontSize * 0.4);
 		paddingY = Math.ceil(fontSize * 0.35);
 		const estimated = estimateTextOverlaySize({
-		lines,
-		fontSize,
-		paddingX,
-		paddingY,
-	});
+			lines,
+			fontSize,
+			paddingX,
+			paddingY,
+		});
 		overlayWidth = estimated.width;
 		overlayHeight = estimated.height;
 		lineHeight = estimated.lineHeight;
@@ -214,17 +214,20 @@ const drawSvgText = (inputImage, rawParams) => {
 		textAnchor,
 	});
 
+	console.log('SVG content length:', svg.length);
+
 	const resvg = new Resvg(svg, {
 		fitTo: { mode: 'original' },
 		font: {
-			// Let resvg use its internal fontdb fallback; explicit fonts are not bundled here.
 			loadSystemFonts: false,
 		},
 	});
 	const pngBuffer = resvg.render().asPng();
+	console.log('Rendered PNG size:', pngBuffer.byteLength);
 
 	const overlay = photon.PhotonImage.new_from_byteslice(new Uint8Array(pngBuffer));
 	try {
+		console.log(`Applying watermark at (${x}, ${y}) on base image ${baseWidth}x${baseHeight}`);
 		photon.watermark(inputImage, overlay, x, y);
 	} finally {
 		overlay.ptr && overlay.free();
@@ -310,7 +313,7 @@ export default {
 		const fetchHeaders = new Headers(request.headers);
 		fetchHeaders.delete('if-modified-since');
 		fetchHeaders.delete('if-none-match');
-		
+
 		const imageRes = await fetch(url, { headers: fetchHeaders });
 		if (!imageRes.ok) {
 			return imageRes;
