@@ -2,6 +2,14 @@ name = "image"
 main = "src/index.js"
 compatibility_date = "2023-11-24"
 
+[[rules]]
+type = "Data"
+globs = ["**/*.ttf"]
+
+[[rules]]
+type = "CompiledWasm"
+globs = ["**/*.wasm"]
+
 
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
 # Note: Use secrets to store sensitive data.

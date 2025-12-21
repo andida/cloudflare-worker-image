@@ -4,6 +4,7 @@ import { Resvg } from '@cf-wasm/resvg';
 import encodeWebp, { init as initWebpWasm } from '@jsquash/webp/encode';
 import * as photon from '@silvia-odwyer/photon';
 
+import FONT_DATA from './font.ttf';
 import WEBP_ENC_WASM from '../node_modules/@jsquash/webp/codec/enc/webp_enc.wasm';
 import PHOTON_WASM from '../node_modules/@silvia-odwyer/photon/photon_rs_bg.wasm';
 
@@ -79,7 +80,7 @@ const buildSvgText = ({
   <text
     x="${x}"
     y="${y0}"
-    font-family="Roboto, Arial, sans-serif"
+    font-family="Roboto Mono, monospace"
     font-size="${fontSize}"
     fill="${escapeXml(safeFill)}"
     fill-opacity="${safeOpacity}"
@@ -219,6 +220,7 @@ const drawSvgText = (inputImage, rawParams) => {
 	const resvg = new Resvg(svg, {
 		fitTo: { mode: 'original' },
 		font: {
+			fontDb: [new Uint8Array(FONT_DATA)],
 			loadSystemFonts: false,
 		},
 	});
