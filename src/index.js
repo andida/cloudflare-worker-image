@@ -70,19 +70,25 @@ const buildSvgText = ({
 
 	const tspans = lines
 		.map((line, idx) => {
-			const dy = idx === 0 ? 0 : lineHeight;
-			return `<tspan x="${x}" dy="${dy}">${escapeXml(line)}</tspan>`;
+			// 将第一个 dy 从 0 改为 0.8em，防止渲染器定位到画布外
+			return `<tspan x="${x}" dy="${idx === 0 ? '0.8em' : lineHeight}">${escapeXml(line)}</tspan>`;
 		})
 		.join('');
 
 	const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+  <style>
+    @font-face {
+      font-family: "WatermarkFont";
+      src: local("Courier New"), local("Monaco"), local("Arial");
+    }
+  </style>
   <!-- 调试：如果能看到大绿圆，说明引擎正常，只是文字问题 -->
   <circle cx="${width / 2}" cy="${height / 2}" r="30" fill="green" />
   <text
     x="${x}"
     y="${y0}"
-    font-family="Monaco"
+    font-family="WatermarkFont"
     font-size="${fontSize}"
     fill="${escapeXml(safeFill)}"
     fill-opacity="${safeOpacity}"
@@ -230,7 +236,7 @@ const drawSvgText = (inputImage, rawParams) => {
 		font: {
 			fontDb: [new Uint8Array(FONT_DATA)],
 			loadSystemFonts: false,
-			defaultFontFamily: 'Monaco',
+			defaultFontFamily: 'WatermarkFont',
 		},
 	});
 	const pngBuffer = resvg.render().asPng();
