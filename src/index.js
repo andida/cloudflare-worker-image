@@ -103,8 +103,48 @@ const processImage = async (env, request, inputImage, pipeAction) => {
 			const image2Res = await fetch(image2, { headers: request.headers });
 			if (image2Res.ok) {
 				const inputImage2 = photon.PhotonImage.new_from_byteslice(new Uint8Array(await image2Res.arrayBuffer()));
+
+				// 智能坐标处理
+				const baseData = inputImage.get_image_data();
+				const waterData = inputImage2.get_image_data();
+
+				let x = 0;
+				let y = 0;
+
+				const pos = params[0];
+				const isKeyword = ['br', 'bl', 'tr', 'tl', 'center'].includes(pos);
+
+				if (isKeyword) {
+					const marginX = parseInt(params[1]) || 0;
+					const marginY = parseInt(params[2]) || 0;
+
+					if (pos === 'br') {
+						x = baseData.width - waterData.width - marginX;
+						y = baseData.height - waterData.height - marginY;
+					} else if (pos === 'bl') {
+						x = marginX;
+						y = baseData.height - waterData.height - marginY;
+					} else if (pos === 'tr') {
+						x = baseData.width - waterData.width - marginX;
+						y = marginY;
+					} else if (pos === 'tl') {
+						x = marginX;
+						y = marginY;
+					} else if (pos === 'center') {
+						x = (baseData.width - waterData.width) / 2;
+						y = (baseData.height - waterData.height) / 2;
+					}
+				} else {
+					// 绝对坐标或负数相对坐标
+					let rawX = parseInt(params[0]) || 0;
+					let rawY = parseInt(params[1]) || 0;
+
+					x = rawX < 0 ? baseData.width - waterData.width + rawX : rawX;
+					y = rawY < 0 ? baseData.height - waterData.height + rawY : rawY;
+				}
+
 				// 多图处理是处理原图
-				photon[action](inputImage, inputImage2, ...params);
+				photon[action](inputImage, inputImage2, Math.round(x), Math.round(y));
 				inputImage2.ptr && inputImage2.free();
 				return inputImage; // 多图模式返回第一张图
 			}
