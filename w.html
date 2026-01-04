@@ -1,0 +1,33 @@
+<canvas id="canvas" style="display:none"></canvas>
+<button onclick="download()">点击生成并下载 ImgEdify 水印</button>
+<script>
+    function download() {
+        const text = "ImgEdify.ai";
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.font = "bold 60px sans-serif";
+        const metrics = ctx.measureText(text);
+        const w = metrics.width + 80;
+        const h = 100;
+        canvas.width = w; canvas.height = h;
+
+        // 绘制半透明圆角背板
+        ctx.fillStyle = "rgba(0,0,0,0.4)";
+        ctx.roundRect(0, 0, w, h, 50);
+        ctx.fill();
+
+        // 绘制文字
+        ctx.font = "bold 60px sans-serif";
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = 4;
+        ctx.fillText(text, w / 2, h / 2 + 2);
+
+        const link = document.createElement('a');
+        link.download = 'watermark.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+</script>
