@@ -15,6 +15,9 @@ await initWebpWasm(WEBP_ENC_WASM);
 
 const clampNumber = (value, min, max) => Math.min(max, Math.max(min, value));
 
+const DEFAULT_MAX_SIZE = 25 * 1024 * 1024; // 25MB
+const DEFAULT_MAX_DIM = 8192; // 8K resolution max
+
 /**
  * 绘制文本水印 (使用 Photon 原生方法)
  */
@@ -199,20 +202,57 @@ export default {
 		if (!imageRes.ok) {
 			return imageRes;
 		}
+
+		// 动态获取限制
+		const maxImageSize = parseInt(env.MAX_IMAGE_SIZE) || DEFAULT_MAX_SIZE;
+		const maxDimension = parseInt(env.MAX_DIMENSION) || DEFAULT_MAX_DIM;
+
+		// 检查 Content-Length (如果存在)
+		const contentLength = imageRes.headers.get('content-length');
+		if (contentLength && parseInt(contentLength) > maxImageSize) {
+			return new Response(`Image too large (Limit: ${maxImageSize / 1024 / 1024}MB)`, { status: 413 });
+		}
+
 		console.log('fetch image done');
 
-		const imageBytes = new Uint8Array(await imageRes.arrayBuffer());
+		let imageBytes = new Uint8Array(await imageRes.arrayBuffer());
+
+		// 二次检查实际下载的大小
+		if (imageBytes.length > maxImageSize) {
+			return new Response(`Image too large (Actual: ${imageBytes.length / 1024 / 1024}MB)`, { status: 413 });
+		}
+
 		try {
 			const inputImage = photon.PhotonImage.new_from_byteslice(imageBytes);
+			// 尽早释放原始字节，减少内存占用
+			imageBytes = null;
 			console.log('create inputImage done');
+
+			// 检查图片尺寸
+			const initialData = inputImage.get_image_data();
+			if (initialData.width > maxDimension || initialData.height > maxDimension) {
+				const w = initialData.width;
+				const h = initialData.height;
+				inputImage.free();
+				return new Response(`Image dimensions too large (${w}x${h} exceeds ${maxDimension}px)`, { status: 400 });
+			}
 
 			/** pipe
 			 * `resize!800,400,1|watermark!https%3A%2F%2Fmt.ci%2Flogo.png,10,10,10,10`
 			 */
 			const pipe = action.split('|');
-			const outputImage = await pipe.filter(Boolean).reduce(async (result, pipeAction) => {
-				result = await result;
-				return (await processImage(env, request, result, pipeAction)) || result;
+			const outputImage = await pipe.filter(Boolean).reduce(async (resultPromise, pipeAction) => {
+				const result = await resultPromise;
+				const processed = await processImage(env, request, result, pipeAction);
+
+				// 如果 processImage 返回了新对象且不是传入的对象，释放旧对象
+				// 注意：在当前 processImage 实现中，多图模式和文本水印会修改并返回原图
+				// 但为了健壮性，这里检查引用
+				if (processed && processed !== result) {
+					result.ptr && result.free();
+					return processed;
+				}
+				return result || processed;
 			}, inputImage);
 			console.log('create outputImage done');
 
@@ -245,8 +285,8 @@ export default {
 			return imageResponse;
 		} catch (error) {
 			console.error('process:error', error.name, error.message, error);
-			const errorResponse = new Response(imageBytes || null, {
-				headers: imageRes.headers,
+			// 发生错误时，尽量返回一个简单的状态，避免携带大体量的 body
+			const errorResponse = new Response(error.message || 'Image processing failed', {
 				status: 'RuntimeError' === error.name ? 415 : 500,
 			});
 			return errorResponse;

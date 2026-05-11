@@ -14,7 +14,7 @@ globs = ["**/*.wasm"]
 # MY_VARIABLE = "production_value"
 
 [vars]
-WHITE_LIST = "meaningslab.com,aitoolly.com,imgedify.com,grsai.com,aitohumanize.com"
+WHITE_LIST = "meaningslab.com,aitoolly.com,imgedify.com,grsai.com,aitohumanize.com,replicate.delivery"
 
 # Bind a KV Namespace. Use KV as persistent storage for small key-value pairs.
 # Docs: https://developers.cloudflare.com/workers/runtime-apis/kv
